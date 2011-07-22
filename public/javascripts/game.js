@@ -7,8 +7,12 @@ Crafty.sprite(32, "images/tiles.png", {
   dirt:   [8,0],
 });
 
-Crafty.sprite(1, "images/hero_sprite.png", {
-  player: [0,0, 30, 60]
+// FIXME: Make working with sprites easier.. this is insane.
+Crafty.sprite(1, "images/players.png", {
+  player0: [0,0, 31, 45],
+  player1: [31*3,0, 31, 45],
+  player2: [0,49*4, 31, 45],
+  player3: [33*4,49*4, 31, 45]
 });
 
 // LOADING SCENE
@@ -16,10 +20,11 @@ Crafty.scene("loading", function() {
   var text = Crafty.e("2D, DOM, text").attr({w: 300, h: 320, x: 150, y: 120})
 
   Crafty.background("#000");
-  text.text("Loading")
-  text.css({"text-align": "center", "color": "white", "font-size": "20px"});
+  text.text("Loading").css({"text-align": "center", "color": "white", "font-size": "20px"});
 
-  Crafty.load(["images/tiles.png", "images/hero_sprite.png"], function() {
+  Crafty.load(["images/tiles.png", "images/players.png"], function() {
+    Crafty.socket = io.connect('http://localhost:3000');
+
     Crafty.scene("main"); // When everything is loaded, run the main scene
   });
 });
@@ -29,45 +34,43 @@ Crafty.scene("main", function() {
   generateMap();
 
   // Create our player entity with some premade components
-  var player = Crafty.e("2D, DOM, player, controls, CustomControls, animate, collision, persist")
-    .attr({x: 400, y: 320, z: 1})
-    .initializeControls(2)
-    .animate("walk_down",  [[0,0,30,60], [30,0,30,60], [60,0,30,60], [3*30, 0,30,60], [5*30, 0,30,60], [4*30, 0,30,60]])
-    .animate("walk_left",  [[0,60,30,60], [30,60,30,60], [60,60,30,60], [3*30,60,30,60], [5*30,60,30,60], [4*30,60,30,60]])
-    .animate("walk_up",    [[0,120,30,60], [30,120,30,60], [60,120,30,60], [3*30,120,30,60], [5*30,120,30,60], [4*30,120,30,60]])
-    .animate("walk_right", [[0,180,30,60], [30,180,30,60], [60,180,30,60], [3*30,180,30,60], [5*30,180,30,60], [4*30,180,30,60]])
-    .bind("enterframe", function(e) {
-      if (this.__move.left)
-        if (!this.isPlaying("walk_left"))
-          player.stop().animate("walk_left", 10)
+  var player = Crafty.e("humanPlayer")
+    .attr({z: 99}) // Make other players appear behind the user's player.
+    .initializeControls(2) // Allow the user to control his player with the keyboard.
 
-      if (this.__move.right)
-        if (!this.isPlaying("walk_right"))
-          this.stop().animate("walk_right", 10);
+  var players = [];
 
-      if (this.__move.up)
-        if (!this.isPlaying("walk_up"))
-          this.stop().animate("walk_up", 10);
+  // Register the human_player in the server, so it's broadcasted to all other clients.
+  Crafty.socket.emit("register_player")
 
-      if (this.__move.down)
-        if (!this.isPlaying("walk_down"))
-          this.stop().animate("walk_down", 10);
-    }).bind("keyup", function(e) {
-      this.stop();
-    });
-
-  var socket = io.connect('http://localhost:3000');
-
-  socket.on('keydown', function (data) {
-    player.keyDown(data.keyCode)
+  // Add a new player to the map when a user joins the game.
+  Crafty.socket.on("player_joined", function(data) {
+    var new_player = Crafty.e("humanPlayer")
+    players.push(new_player)
   });
 
-  socket.on('keyup', function () {
+  // After Joining the server sends data with all the current players and their positions so the client loads them into the map.
+  Crafty.socket.on("load_current_players", function(data) {
+    var current_players = data.players
+    for (var i = 0; i < current_players; i++) {
+      var new_player = Crafty.e("humanPlayer").attr({x: (400 + 30*i)})
+      players.push(new_player)
+    }
+  });
+
+  // Move the player realisticaly as the user controls it,
+  // but also make sure the end position is accurate.
+  Crafty.socket.on('keydown', function (data) {
+    player.keyDown(data.keyCode)
+    player.attr(data.position)
+  });
+
+  Crafty.socket.on('keyup', function (data) {
     player.keyUp()
+    player.attr(data.position)
   });
 
   // Broadcast the player movement to the other clients.
-  player.bind("keyup", function(e) { socket.emit("keyup") });
-  player.bind("keydown", function(e) { socket.emit("keydown", {"keyCode": e.keyCode}) });
+  player.bind("keyup", function(e) { Crafty.socket.emit("keyup", {"position": player.pos() }) });
+  player.bind("keydown", function(e) { Crafty.socket.emit("keydown", {"keyCode": e.keyCode, "position": player.pos() }) });
 });
-

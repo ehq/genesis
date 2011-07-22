@@ -28,12 +28,25 @@ require('./routes/site')(app);
 app.listen(3000);
 console.log("...aaaand we're up! (port: %d env: %s)", app.address().port, app.settings.env);
 
+// Events
+var players = 0;
+
 io.sockets.on('connection', function (socket) {
+  socket.on('register_player', function(data) {
+    socket.emit("load_current_players", {"players": players})
+    socket.broadcast.emit("player_joined")
+    players++;
+  })
+
   socket.on('keydown', function (data) {
     socket.broadcast.emit("keydown", data);
   });
 
-  socket.on('keyup', function () {
-    socket.broadcast.emit("keyup");
+  socket.on('keyup', function (data) {
+    socket.broadcast.emit("keyup", data);
+  });
+
+  socket.on('disconnect', function () {
+    players--;
   });
 });

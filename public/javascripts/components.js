@@ -1,3 +1,43 @@
+Crafty.c("humanPlayer", {
+  init: function() {
+    this.spritePositions = [ [0,0], [31*3,0], [0,49*4], [32*3, 49*4] ]
+    this.spriteId = Crafty.randRange(0,3)
+    this.addComponent("2D, DOM, controls, CustomControls, animate, collision, persist, player"+this.spriteId)
+    this.attr({x: 400, y: 320, z:1}) // Make new players appear in the center of the map.
+
+    this.enableAnimations();
+  },
+
+  enableAnimations: function() {
+    var pos = this.spritePositions[this.spriteId]
+
+    // The animation is based on this Sprite: images/players.png
+    // The animation needs an array like [[x,y,width,height]].
+    this.movementAnimation = {
+      "down":  [ [pos[0], pos[1], 33, 45], [pos[0] + 33, pos[1], 33, 45], [pos[0] + 62, pos[1], 33, 45] ],
+      "left":  [ [pos[0], pos[1] + 45, 31, 45], [pos[0] + 31, pos[1] + 45, 31, 45], [pos[0] + 62, pos[1]+45, 31, 45] ],
+      "right": [ [pos[0], pos[1]+94, 31, 45], [pos[0] + 31, pos[1]+94, 31, 45], [pos[0] + 62, pos[1]+94, 31, 45] ],
+      "up":    [ [pos[0], pos[1]+140, 31, 45], [pos[0] + 31, pos[1]+140, 31, 45], [pos[0] + 62, pos[1]+140, 31, 45] ],
+    }
+
+    this.animate("walk_down",  this.movementAnimation.down)
+    this.animate("walk_left",  this.movementAnimation.left)
+    this.animate("walk_right", this.movementAnimation.right)
+    this.animate("walk_up",    this.movementAnimation.up)
+
+    this.bind("enterframe", function(e) {
+      if (this.__move.down && !this.isPlaying("walk_down"))
+        this.stop().animate("walk_down", 10);
+      if (this.__move.left && !this.isPlaying("walk_left"))
+        this.stop().animate("walk_left", 10);
+      if (this.__move.right && !this.isPlaying("walk_right"))
+        this.stop().animate("walk_right", 10);
+      if (this.__move.up && !this.isPlaying("walk_up"))
+        this.stop().animate("walk_up", 10);
+    })
+  }
+})
+
 Crafty.c('CustomControls', {
   __move: {left: false, right: false, up: false, down: false},
   _speed: 5,
