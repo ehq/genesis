@@ -12,11 +12,11 @@ To run the app, you'll need the foreman gem (yeah, it's weird that it's a gem, b
 
 Also, this now works on heroku. Just run something like the following commands to get it up and running: (will make a raketask for this soon)
 
-heroku create --stack cedar
-git push heroku master
-heroku ps:scale web=1
-heroku logs (look for "State changed from starting to up" at the end)
-heroku open (or just go to the url in your web browser from the output of those commands)
+	heroku create --stack cedar
+	git push heroku master
+	heroku ps:scale web=1
+	heroku logs (look for "State changed from starting to up" at the end)
+	heroku open (or just go to the url in your web browser from the output of those commands)
 
 Note: I'm not currently able to see other players in the game (on local or heroku) but it may very well be due to the changes I made to get it running for me locally and on heroku.
 
