@@ -26,7 +26,8 @@ app.configure('production', function(){
 // Routes
 require('./routes/site')(app);
 
-app.listen(3000);
+var port = process.env.port || 3000;
+app.listen(port);
 console.log("...aaaand we're up! (port: %d env: %s)", app.address().port, app.settings.env);
 
 // Events
