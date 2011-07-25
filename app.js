@@ -1,3 +1,4 @@
+require.paths.unshift('./node_modules')
 var express = require('express');
 var io = require('socket.io');
 
